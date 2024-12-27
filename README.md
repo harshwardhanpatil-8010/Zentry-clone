@@ -5,7 +5,7 @@ This repository contains the source code for the **Zentry Clone** project. It is
 ## Live Demo
 
 Check out the live version of the project here: [Zentry Clone](https://zentry-clone-black.vercel.app/)
-**Note: For enabling the audio click on the rightmost button in the Navbar**
+- **Note: For enabling the audio click on the rightmost button in the Navbar**
 ## Features
 
 - **Dynamic Video Transitions**: Smooth animations and video switching powered by GSAP.
