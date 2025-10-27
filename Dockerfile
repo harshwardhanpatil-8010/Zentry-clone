@@ -1,49 +1,37 @@
-```dockerfile
 # Stage 1: Build the React application
-FROM node:lts-alpine as builder
+FROM node:20-alpine AS builder
 
+# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json (or yarn.lock/pnpm-lock.yaml)
-# to leverage Docker cache for dependencies
-COPY package.json package-lock.json ./
+# Copy package.json and package-lock.json (or yarn.lock)
+COPY package*.json ./
 
 # Install dependencies
-# 'npm ci' is preferred for CI/CD builds for reproducibility
-RUN npm ci --prefer-offline --no-audit
+RUN npm install
 
-# Copy the rest of the application code
+# Copy the rest of the application source code
 COPY . .
 
-# Build the React application
-# This typically outputs static files into the 'dist' directory
+# Build the application for production
+# The build artifacts will be in the /app/dist directory
 RUN npm run build
 
 # Stage 2: Serve the application with Nginx
 FROM nginx:stable-alpine
 
-# Remove default Nginx configuration file
-RUN rm /etc/nginx/conf.d/default.conf
-
-# Copy custom Nginx configuration for a Single Page Application (SPA)
-# This ensures that client-side routing works by falling back to index.html
-COPY <<EOF /etc/nginx/conf.d/default.conf
-server {
-  listen 80;
-  location / {
-    root /usr/share/nginx/html;
-    index index.html index.htm;
-    try_files \$uri \$uri/ /index.html;
-  }
-}
-EOF
-
-# Copy the built React application from the builder stage
+# Copy the build output from the builder stage to Nginx's public directory
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Expose port 80 to the host
+# Remove the default Nginx configuration
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Add a custom configuration for a Single Page Application (SPA)
+# This will redirect all routes to index.html
+RUN echo "server {\n  listen 80;\n  server_name localhost;\n\n  location / {\n    root /usr/share/nginx/html;\n    index index.html;\n    try_files \$uri \$uri/ /index.html;\n  }\n}" > /etc/nginx/conf.d/default.conf
+
+# Expose port 80
 EXPOSE 80
 
-# Command to run Nginx in the foreground
+# Start Nginx in the foreground
 CMD ["nginx", "-g", "daemon off;"]
-```
